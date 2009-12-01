@@ -1,7 +1,7 @@
 #ifndef  sysdef_h
 #define  sysdef_h
 
-#DEFINE  EMPTY_VALUE             0x00
+#DEFINE  EMPTY_VALUE             0xFF
 
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
@@ -54,6 +54,17 @@
 */
 
 #DEFINE  sysDefaultValues_len       30
-const char sysDefaultValues[sysDefaultValues_len]= {MEMORY_SIZE,SERIAL_NUMBER_1,SERIAL_NUMBER_2,SERIAL_NUMBER_3,SERIAL_NUMBER_4,make8(BLOCK_SIZE,1),BLOCK_SIZE,make8(FREE_BLOCK_START,1),FREE_BLOCK_START,make8(FREE_BLOCK_END,1),FREE_BLOCK_END,make8(INDEX_BLOCK_START,1),INDEX_BLOCK_START,make8(INDEX_BLOCK_END,1),INDEX_BLOCK_END,make8(DATA_BLOCK_START,1),DATA_BLOCK_START,make8(DATA_BLOCK_END,1),DATA_BLOCK_END,'F','A','T','P','I','C',' ','v','1','.','0'};
+const char sysDefaultValues[sysDefaultValues_len]= {
+                                                      MEMORY_SIZE,
+                                                      SERIAL_NUMBER_1,SERIAL_NUMBER_2,SERIAL_NUMBER_3,SERIAL_NUMBER_4,
+                                                      make8(BLOCK_SIZE,1),BLOCK_SIZE,
+                                                      make8(FREE_BLOCK_START,1),FREE_BLOCK_START,
+                                                      make8(FREE_BLOCK_END,1),FREE_BLOCK_END,
+                                                      make8(INDEX_BLOCK_START,1),INDEX_BLOCK_START,
+                                                      make8(INDEX_BLOCK_END,1),INDEX_BLOCK_END,
+                                                      make8(DATA_BLOCK_START,1),DATA_BLOCK_START,
+                                                      make8(DATA_BLOCK_END,1),DATA_BLOCK_END,
+                                                      'F','A','T','P','I','C',' ','v','1','.','0'
+                                                   };
 
 #endif
