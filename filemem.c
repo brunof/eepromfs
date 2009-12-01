@@ -173,11 +173,18 @@ int16 eepromfs_fileSize(int8 fileNmr)
 
 }
 
-short eepromfs_fileWrite(int8 file,int16 startPos, char * data, int16 quantity)
+int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantity)
 {
+   int16 aux161;
+   
+   //if startPos is beyond EOF, adjust it to start writing at EOF
+   if(aux161=eepromfs_fileSize(fileNmr)<startPos) startPos=aux161;
+
+   
+   
 
 }
-short eepromfs_fileRead(int8 file,int16 startPos, char * data, int16 quantity)
+int16 eepromfs_fileRead(int8 file,int16 startPos, char * data, int16 quantity)
 {
 
 }
@@ -187,14 +194,22 @@ short eepromfs_fileCopy(int8 fileSource,int8 fileDestiny)
 }
 
 
+int16 eepromfs_fileCalculatePos(int8 fileNmr, int16 position)
+{
+   int16 aux161,aux162;
+   int8 aux83;
+   
+   aux161=eepromfs_getAddress(INDEX_BLOCK_START_ADDR);
+   aux161+=fileNmr;
+   //read first block number of file...
+   aux83=read_ext_eeprom(aux161);   
 
+   //initialize counter...
+   aux162=0;
 
+   
 
-
-
-
-
-
+}
 
 
 /////////////////////////////////////////////////

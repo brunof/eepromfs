@@ -2,6 +2,8 @@
 #define  sysdef_h
 
 #DEFINE  EMPTY_VALUE             0xFF
+#DEFINE  BOF                     0xFFFF
+#DEFINE  EOF                     0xFFFF
 
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
