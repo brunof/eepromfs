@@ -12,7 +12,9 @@ short eepromfs_fileRemove(int8 fileNmr);
 int16 eepromfs_fileSize(int8 fileNmr);
 
 //Aux
+int16 eepromfs_getBlockAddress(int8 blockNmr);
 unsigned int16 eepromfs_getAddress(unsigned int16 VarPos);
+int16 eepromfs_fileCalculatePos(int8 fileNmr, int16 position, int8 * parentBlockNmr);
 short eepromfs_fileInBounds(int8 fileNmr);
 short eepromfs_fileExists(int8 fileNmr);
 int8 eepromfs_findEmptyBlock(void);

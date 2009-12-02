@@ -5,6 +5,8 @@
 #DEFINE  BOF                     0xFFFF
 #DEFINE  EOF                     0xFFFF
 
+#DEFINE  EEPROM_DELAY            0
+
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
 //Modifying this values will cause unespected behaivor
@@ -27,10 +29,13 @@
 #DEFINE  SERIAL_NUMBER_3           '0'
 #DEFINE  SERIAL_NUMBER_4           '1'
 #DEFINE  BLOCK_SIZE              0x100          //block_size = 2Bytes
-#DEFINE  FREE_BLOCK_START        0x072          //free_block_start = 2Bytes
+
+#DEFINE  FREE_BLOCK_START        0x071          //free_block_start = 2Bytes
 #DEFINE  FREE_BLOCK_END          0x080          //free_block_end = 2Bytes
+
 #DEFINE  INDEX_BLOCK_START       0x081          //index_block_start = 2Bytes
 #DEFINE  INDEX_BLOCK_END         0x0FF           //index_block_end = 2Bytes
+
 #DEFINE  DATA_BLOCK_START        0x100          //data_block_start = 2Bytes
 #DEFINE  DATA_BLOCK_END          0x7FFF         //data_block_end = 2Bytes
 
@@ -45,7 +50,7 @@
 #DEFINE  ERR_FILE_IS_READ_ONLY         4
 #DEFINE  ERR_TOO_BIG                   8
 #DEFINE  ERR_OUT_OF_BOUNDS             16
-
+#DEFINE  ERR_NO_MORE_SPACE             32
 
 /*//AUTOMATIC CALCULATED VALUES:
 #IF   (MEMORY_SIZE*1024/BLOCK_SIZE/8) % 8

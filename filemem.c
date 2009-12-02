@@ -3,8 +3,6 @@
 #include <24256.C>
 
 int8 eepromfs_flag_error;
-//char aux81,aux82,aux83;
-//unsigned int16 aux161,aux162,aux163;
 
 //short eepromfs_format(char mem_size, int32 ser_num, int16 blck_size, char* sys_id){
 short eepromfs_format(char * sys_id)
@@ -17,13 +15,14 @@ short eepromfs_format(char * sys_id)
    for(i=0;i<sysDefaultValues_len;i++)
    {
       write_ext_eeprom(i,sysDefaultValues[i]);
-      delay_ms(5);
+      delay_ms(EEPROM_DELAY);
    }
 
    //write system_id array...
    i=SYSTEM_ID_START_ADDR;
    while(TRUE){
       write_ext_eeprom(i,*sys_id);
+      delay_ms(EEPROM_DELAY);
       if(*sys_id=='\0')  break;
       sys_id++;
       i++;
@@ -35,14 +34,14 @@ short eepromfs_format(char * sys_id)
    for(i=FREE_BLOCK_START;i<=FREE_BLOCK_END;i++)
    {
       write_ext_eeprom(i,0x00);
-      delay_ms(5);
+      delay_ms(EEPROM_DELAY);
    }
    
    //index block FORMAT:
    for(i=INDEX_BLOCK_START;i<=INDEX_BLOCK_END;i++)
    {
       write_ext_eeprom(i,EMPTY_VALUE);     //indicate empty block
-      delay_ms(5);
+      delay_ms(EEPROM_DELAY);
    }
    
    //data block shouldnt need to be formated
@@ -68,6 +67,8 @@ short eepromfs_fileTouch(int8 fileNmr)
    //Search for an empty block to store the file...
    aux83=eepromfs_findEmptyBlock();
    
+   if(aux83==EMPTY_VALUE) return FALSE;
+   
    //Now, write INDEX data
    //get INDEX BLOCK START ADDRESS
    aux161=eepromfs_getAddress(INDEX_BLOCK_START_ADDR);
@@ -76,7 +77,7 @@ short eepromfs_fileTouch(int8 fileNmr)
 
    //write index data. now index points to block :)   
    write_ext_eeprom(aux161,aux83);
-   delay_ms(5);
+   delay_ms(EEPROM_DELAY);
 
    //write block state & control values...
    eepromfs_setBlockIdentifiers(aux83,1,0x00,0x00);       //indicate that file haves 0 bytes & some other important stuff...
@@ -106,7 +107,7 @@ short eepromfs_fileRemove(int8 fileNmr)
 
    //delete this file INDEX BLOCK info...
    write_ext_eeprom(aux161,EMPTY_VALUE);
-   delay_ms(5);
+   delay_ms(EEPROM_DELAY);
 
    do{
       //get block info...
@@ -149,24 +150,16 @@ int16 eepromfs_fileSize(int8 fileNmr)
    //init counter...
    aux163=0;
 
-   //get file first block info...
-   eepromfs_getBlockIdentifiers(aux83,&state,&control,&control2);
-
-   //if file continue in other block, continue calculating size...
-   while(bit_test(control,7))
-   {
-      //get next block info...
+   do{
+      //get block info...
       eepromfs_getBlockIdentifiers(aux83,&state,&control,&control2);
-
       //point to next block...
       aux83=control2; 
+      //if file continue in other block, continue blocks...
       
       //add block bytes to size
-      aux163+=aux162;
-   }
-
-   //if last file block, only add bytes indicated in control2 identifier...
-   aux163+=control2;
+      if(bit_test(control,7)) aux163+=aux162; else aux163+=control2;
+   }while(bit_test(control,7));
 
    //return with file size
    return aux163;
@@ -175,14 +168,56 @@ int16 eepromfs_fileSize(int8 fileNmr)
 
 int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantity)
 {
-   int16 aux161;
-   
+   int16 aux161,aux162,aux163;
+   int8 parentBlock,res;
+
+   if(!quantity) return 0;
+
+   aux161=eepromfs_fileSize(fileNmr);
    //if startPos is beyond EOF, adjust it to start writing at EOF
-   if(aux161=eepromfs_fileSize(fileNmr)<startPos) startPos=aux161;
-
+   if(aux161<startPos) startPos=aux161;
    
+   //get address were to write and block number
+   aux162=eepromfs_fileCalculatePos(fileNmr, startPos, &parentBlock);
    
+   //jump to begining of block
+   aux161=eepromfs_getBlockAddress(parentBlock);
+   
+   //add real block size to jump to identifier zone...(!16 bits should change -2 for -3)
+   aux163=aux161+(eepromfs_getAddress(BLOCK_SIZE_ADDR)-2);
+   
+   //at this point:  aux161 contains bock start address
+   //                aux162 contains address to write to
+   //                aux163 contains identifier start zone(should not be passed(writing))
+   //                parentBlock contiene el bloque actual donde estamos escribiendo...
+   
+   while(quantity)
+   {
+      if(aux162==aux163){
+         res=eepromfs_findEmptyBlock();
+         //write block info...(write that this block is NOT free, and that it continues in "res" block.
+         eepromfs_setBlockIdentifiers(parentBlock,1,0x80,res);
+         //if theres no other empty block to write to, break!
+         if(res==EMPTY_VALUE) break;
 
+         //now, continue writing in new block!!!
+         parentBlock=res;
+         aux162=eepromfs_getBlockAddress(res);
+      }else{
+         write_ext_eeprom(aux162,*data);
+         delay_ms(EEPROM_DELAY);
+         data++;
+         aux162++;
+         quantity--;
+      }
+   }
+
+   //write last block(if valid) info...
+   if(res!=EMPTY_VALUE){
+      eepromfs_setBlockIdentifiers(parentBlock,1,0x00,aux162-eepromfs_getBlockAddress(parentBlock));
+   }
+   
+   return quantity;
 }
 int16 eepromfs_fileRead(int8 file,int16 startPos, char * data, int16 quantity)
 {
@@ -194,27 +229,63 @@ short eepromfs_fileCopy(int8 fileSource,int8 fileDestiny)
 }
 
 
-int16 eepromfs_fileCalculatePos(int8 fileNmr, int16 position)
+int16 eepromfs_fileCalculatePos(int8 fileNmr, int16 position, int8 * parentBlockNmr)
 {
-   int16 aux161,aux162;
-   int8 aux83;
+   int8 aux83,state,control,control2;
+   int16 aux161,blockSize,aux163;
    
    aux161=eepromfs_getAddress(INDEX_BLOCK_START_ADDR);
    aux161+=fileNmr;
    //read first block number of file...
    aux83=read_ext_eeprom(aux161);   
 
-   //initialize counter...
-   aux162=0;
+   blockSize=eepromfs_getAddress(BLOCK_SIZE_ADDR);
+   //get real block size...(!16 bits should change -2 for -3)
+   blockSize-=2;
 
-   
+   //get file first block info...
+   eepromfs_getBlockIdentifiers(aux83,&state,&control,&control2);
 
+   //if file continue in other block, continue calculating position...
+   while(bit_test(control,7) && position>blockSize)
+   {
+      //get next block info...
+      eepromfs_getBlockIdentifiers(aux83,&state,&control,&control2);
+
+      //if next block, point to next block...
+      if(bit_test(control,7)){
+         aux83=control2;
+         //substract an entire block :)
+         position-=blockSize;
+      }
+   }
+
+   //fill parent block with block Number...
+   *parentBlockNmr=aux83;
+
+   //we're reaching to the end of the search...lets calculate final position...
+   //first, go to last data block address 
+   aux161=eepromfs_getBlockAddress(aux83);
+   //and add remaining bytes...
+   aux161+=position;
+
+   //return with address
+   return aux161;
 }
 
 
 /////////////////////////////////////////////////
 //AUXILIAR FUNCTIONS...
 /////////////////////////////////////////////////
+
+int16 eepromfs_getBlockAddress(int8 blockNmr)
+{
+   int16 aux161,aux162;
+   aux161=eepromfs_getAddress(BLOCK_SIZE_ADDR);
+   aux162=eepromfs_getAddress(DATA_BLOCK_START_ADDR);
+
+   return aux162+aux162*blockNmr;
+}
 
 unsigned int16 eepromfs_getAddress(unsigned int16 VarPos)
 {
@@ -275,7 +346,7 @@ int8 eepromfs_findEmptyBlock(void)
    aux161=eepromfs_getAddress(INDEX_BLOCK_START_ADDR);
 
    //get INDEX BLOCK END ADDRESS
-   aux162=eepromfs_getAddress(FREE_BLOCK_END_ADDR);
+   aux162=eepromfs_getAddress(INDEX_BLOCK_END_ADDR);
 
    //Get file max quantity(same as block count...)
    aux162-=aux161;
@@ -288,7 +359,19 @@ int8 eepromfs_findEmptyBlock(void)
    aux163=0;
    
    //search for an empty block(8 blocks at a time)
-   while(aux82=read_ext_eeprom(aux161++)==0xFF && aux163<aux162){ aux163+=8; }
+   while(read_ext_eeprom(aux161)==0xFF && aux163<aux162){
+      aux163+=8;
+      aux161++;
+   }
+
+   //no empty blocks aviable?
+   if(aux163>=aux162){
+      eepromfs_flag_error|=ERR_NO_MORE_SPACE;
+      return EMPTY_VALUE;
+   }
+
+   //get the one who have an empty block
+   aux82=read_ext_eeprom(aux161);
 
    //search especific block in the octet...
    while(bit_test(aux82,0) && aux163<aux162){
@@ -313,34 +396,32 @@ short eepromfs_setBlockIdentifiers(int8 blockNmr, short state, int8 control,int8
    while(aux82>7)
    {
       aux161++;
-      aux82-=7;
+      aux82-=8;
    }
 
    //get 8 block info...
    aux81=read_ext_eeprom(aux161);
 
-   if(state) bit_set(aux81,blockNmr); else bit_clear(aux81,blockNmr);
+   if(state) bit_set(aux81,aux82); else bit_clear(aux81,aux82);
    
    //write result...
    write_ext_eeprom(aux161,aux81);
-   delay_ms(5);
-
-   //get DATA BLOCK START ADDRESS
-   aux161=eepromfs_getAddress(DATA_BLOCK_START_ADDR);
+   delay_ms(EEPROM_DELAY);
    
    //get BLOCK SIZE
    aux162=eepromfs_getAddress(BLOCK_SIZE_ADDR);
 
    //calculate selected empty block address...
-   aux163=aux161+aux162*blockNmr;                               //data block start address + (block size * empty block finded)                                      
+   aux163=eepromfs_getBlockAddress(blockNmr);                               //data block start address + (block size * empty block finded)                                      
+   //add real block size...(!16 bits should change -2 for -3)
    aux163+=aux162-2;                                           //jump to identifiers zone
 
    //write values...
    write_ext_eeprom(aux163++,control);    
-   delay_ms(5);
+   delay_ms(EEPROM_DELAY);
 
    write_ext_eeprom(aux163++,control2);
-   delay_ms(5);
+   delay_ms(EEPROM_DELAY);
 }
 
 short eepromfs_getBlockIdentifiers(int8 blockNmr, int8 * state,int8 *control, int8 * control2)
@@ -359,7 +440,7 @@ short eepromfs_getBlockIdentifiers(int8 blockNmr, int8 * state,int8 *control, in
    while(aux82>7)
    {
       aux161++;
-      aux82-=7;
+      aux82-=8;
    }
 
    //get 8 block info...
@@ -369,11 +450,10 @@ short eepromfs_getBlockIdentifiers(int8 blockNmr, int8 * state,int8 *control, in
    if(bit_test(aux81,blockNmr)) *state=TRUE; else *state=FALSE;
    
    //now, lets read block control info...
-   aux161=eepromfs_getAddress(DATA_BLOCK_START_ADDR);
    aux162=eepromfs_getAddress(BLOCK_SIZE_ADDR);
 
    //go to block data init...
-   aux161+=(aux162*blockNmr);
+   aux161=eepromfs_getBlockAddress(blockNmr);
    //add bytes to get control address(!16 bits should change -2 for -3)
    aux161+=(aux162-2);
 
