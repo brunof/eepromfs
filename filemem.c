@@ -29,7 +29,7 @@ short eepromfs_format(char * sys_id)
    }
 
    //now, format blocks:
-   
+
    //free block FORMAT:
    for(i=FREE_BLOCK_START;i<=FREE_BLOCK_END;i++)
    {
@@ -193,16 +193,21 @@ int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantit
    
    while(quantity)
    {
-      if(aux162==aux163){
+      if(aux162>=aux163){
          res=eepromfs_findEmptyBlock();
          //write block info...(write that this block is NOT free, and that it continues in "res" block.
-         eepromfs_setBlockIdentifiers(parentBlock,1,0x80,res);
-         //if theres no other empty block to write to, break!
-         if(res==EMPTY_VALUE) break;
+         if(res==EMPTY_VALUE){
+            //if theres no other empty block to write to, break!
+            eepromfs_setBlockIdentifiers(parentBlock,1,0x00,eepromfs_getAddress(BLOCK_SIZE_ADDR)-2);
+            break;
+         }else{
+            eepromfs_setBlockIdentifiers(parentBlock,1,0x80,res);
+         }
 
          //now, continue writing in new block!!!
          parentBlock=res;
          aux162=eepromfs_getBlockAddress(res);
+         aux163=aux162+(eepromfs_getAddress(BLOCK_SIZE_ADDR)-2);
       }else{
          write_ext_eeprom(aux162,*data);
          delay_ms(EEPROM_DELAY);
@@ -364,12 +369,6 @@ int8 eepromfs_findEmptyBlock(void)
       aux161++;
    }
 
-   //no empty blocks aviable?
-   if(aux163>=aux162){
-      eepromfs_flag_error|=ERR_NO_MORE_SPACE;
-      return EMPTY_VALUE;
-   }
-
    //get the one who have an empty block
    aux82=read_ext_eeprom(aux161);
 
@@ -378,7 +377,13 @@ int8 eepromfs_findEmptyBlock(void)
       aux163++;
       aux82>>=1;
    }
-   
+
+   //no empty blocks aviable?
+   if(aux163>=aux162){
+      eepromfs_flag_error|=ERR_NO_MORE_SPACE;
+      return EMPTY_VALUE;
+   }
+
    //return low byte of var witch contains block number...
    return aux163;
 
@@ -447,7 +452,7 @@ short eepromfs_getBlockIdentifiers(int8 blockNmr, int8 * state,int8 *control, in
    aux81=read_ext_eeprom(aux161);
 
    //and set pointer according to free block value
-   if(bit_test(aux81,blockNmr)) *state=TRUE; else *state=FALSE;
+   if(bit_test(aux81,aux82)) *state=TRUE; else *state=FALSE;
    
    //now, lets read block control info...
    aux162=eepromfs_getAddress(BLOCK_SIZE_ADDR);

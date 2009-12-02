@@ -1,7 +1,12 @@
-ToDO:
-
 Bugs:
 
-eepromfs_fileSize() gives incorrect file size when the block of the file  haves an control2 identifier = 0xFF.
-This only happens when file written doesnt have any more place in memory...
-Will be fixed soon... :)
+eepromfs_fileSize() has been corrected
+and other bugs founded in eerpomfs_fileWrite() and eepromfs_getEmptyBlock() had been fixed...
+
+--------------------------------------------------------------------------
+
+ToDO:
+
+eepromfs_fileRead();
+eepromfs_fileCopy();
+other relevant functions that may occur...

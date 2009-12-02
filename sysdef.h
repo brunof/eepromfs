@@ -1,11 +1,11 @@
 #ifndef  sysdef_h
 #define  sysdef_h
 
-#DEFINE  EMPTY_VALUE             0xFF
-#DEFINE  BOF                     0xFFFF
-#DEFINE  EOF                     0xFFFF
+#DEFINE  EMPTY_VALUE             0xFFFFFFFF
+#DEFINE  BOF                     0x00000000
+#DEFINE  EOF                     0xFFFFFFFF
 
-#DEFINE  EEPROM_DELAY            0
+#DEFINE  EEPROM_DELAY            5
 
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
