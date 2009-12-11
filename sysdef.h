@@ -7,6 +7,12 @@
 
 #DEFINE  EEPROM_DELAY            5
 
+#if(EEPROM_DELAY!=0)
+   #define  DEMORA_EEPROM delay_ms(EEPROM_DELAY);
+#else
+   #define  DEMORA_EEPROM 
+#endif
+
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
 //Modifying this values will cause unespected behaivor
@@ -50,7 +56,8 @@
 #DEFINE  ERR_FILE_IS_READ_ONLY         4
 #DEFINE  ERR_TOO_BIG                   8
 #DEFINE  ERR_OUT_OF_BOUNDS             16
-#DEFINE  ERR_NO_MORE_SPACE             32
+#DEFINE  ERR_OUT_OF_SPACE              32
+#DEFINE  ERR_POSITION_OUT_OF_SIZE      64
 
 /*//AUTOMATIC CALCULATED VALUES:
 #IF   (MEMORY_SIZE*1024/BLOCK_SIZE/8) % 8

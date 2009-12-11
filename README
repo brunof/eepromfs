@@ -1,12 +1,13 @@
-Bugs:
+Bugs Known:
 
-eepromfs_fileSize() has been corrected
-and other bugs founded in eerpomfs_fileWrite() and eepromfs_getEmptyBlock() had been fixed...
+Bugs Fixed:
+* eepromfs_fileSize() has been corrected
+* and other bugs founded in eerpomfs_fileWrite() and eepromfs_getEmptyBlock() had been fixed...
 
 --------------------------------------------------------------------------
 
 ToDO:
-* replace eepromfs_getAddress() by a simple privated (not included in the public header) getAddres().
+* replace eepromfs_getAddress() by a simple privated (not included in the public header) getAddress().
 * maybe the auxiliary's functions should not be in the header. You should create a filemem_private.h.
 * eepromfs_fileRead();
 * eepromfs_fileCopy();
