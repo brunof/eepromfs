@@ -5,12 +5,12 @@
 //short eepromfs_format(char mem_size, int32 ser_num, int16 blck_size, char* sys_id); deprecated?
 short eepromfs_format(char * sys_id);
 short eepromfs_fileTouch(int8 fileNmr);
-int16 eepromfs_fileWrite(int8 file,int16 startPos, char * data, int16 quantity);
-//int16 eepromfs_fileRead(int8 file,int16 startPos, char * data, int16 quantity);
 //short eepromfs_fileCopy(int8 fileSource,int8 fileDestiny);
 short eepromfs_fileRemove(int8 fileNmr);
 int16 eepromfs_fileSize(int8 fileNmr);
 int16 eepromfs_freeSpace(void);
+int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantity);
+int16 eepromfs_fileRead(int8 fileNmr,int16 startPos, char * dataReaded, int16 quantity);
 
 //Aux
 int16 eepromfs_getBlockAddress(int8 blockNmr);

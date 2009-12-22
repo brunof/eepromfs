@@ -166,7 +166,7 @@ int16 eepromfs_fileSize(int8 fileNmr)
 
 }
 
-//Writes data in a file...especify file number, starting position were to write
+//Writes data in a file...especify file number & starting position were to write
 int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantity)
 {
    int16 aux161,aux162,aux163,freeSpace;
@@ -174,11 +174,11 @@ int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantit
    int8 state,control,control2;
 
    //if nothing to write...Exit(!!!!!!!CHANGE FOR CLOSE FILE!)
-   if(!quantity) return 0;
+   if(!quantity) return EMPTY_VALUE;
 
    aux161=eepromfs_fileSize(fileNmr);
    //if startPos is beyond EOF, error...
-   if(aux161<startPos) eepromfs_flag_error|=ERR_POSITION_OUT_OF_SIZE;
+   if(aux161<startPos){ eepromfs_flag_error|=ERR_POSITION_OUT_OF_SIZE; return EMPTY_VALUE;}
    
    //get address were to write and block number
    aux162=eepromfs_fileCalculatePos(fileNmr, startPos, &parentBlock);
@@ -192,7 +192,7 @@ int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantit
    //at this point:  aux161 contains block to write start ADDRESS
    //                aux162 contains ADDRESS to write to
    //                aux163 contains identifier start zone(should not be passed(writing))
-   //                parentBlock contiene el bloque actual donde estamos escribiendo...
+   //                parentBlock contiains actual block were we're writing...
 
    //get free space to check if there´s enough free space 
    freeSpace=eepromfs_freeSpace();
@@ -246,22 +246,80 @@ int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantit
    return quantity;
 }
 
-
-
-
-
-
-
-
-int16 eepromfs_fileRead(int8 file,int16 startPos, char * data, int16 quantity)
+int16 eepromfs_fileRead(int8 fileNmr,int16 startPos, char * dataReaded, int16 quantity)
 {
+   int16 aux161,aux162,aux163;
+   int8 parentBlock,res,bytesInBlock;
+   int8 state,control,control2;
 
+   //if nothing to read...Exit
+   if(!quantity)  return EMPTY_VALUE;
+
+   aux161=eepromfs_fileSize(fileNmr);
+   
+   //if startPos is beyond EOF, error...
+   if(aux161<startPos){ eepromfs_flag_error|=ERR_POSITION_OUT_OF_SIZE; return EMPTY_VALUE;}
+   
+   //get address were to read and block number
+   aux162=eepromfs_fileCalculatePos(fileNmr, startPos, &parentBlock);
+
+   //jump to begining of block
+   aux161=eepromfs_getBlockAddress(parentBlock);
+   
+   //add real block size to jump to identifier zone...(!16 bits should change -2 for -3)
+   aux163=aux161+(eepromfs_getAddress(BLOCK_SIZE_ADDR)-2);
+   
+   //get actual block Info...
+   eepromfs_getBlockIdentifiers(parentBlock,&state,&control,&control2);   
+   
+   //at this point:  aux161 contains block to read start ADDRESS
+   //                aux162 contains ADDRESS to read to
+   //                aux163 contains identifier start zone(should not be passed(reading))
+   //                parentBlock contiains actual block were we're reading...
+   //                state contains block State BYTE
+   //                control contains block control BYTE
+   //                control2 contains block control2 BYTE
+
+
+   //Get quantity of bytes usefull in actual block
+   if(bit_test(control,7)){
+      bytesInBlock= eepromfs_getAddress(BLOCK_SIZE_ADDR)-2; 
+   }else{
+      bytesInBlock=control2;
+   }
+   
+   //discount bytes skipped
+   bytesInBlock-=aux162-aux161;
+   
+   while(quantity)
+   {
+      if(!bytesInBlock){                     //no more bytes in this block to read?
+         if(!bit_test(control,7)) break;     //if EOF reached, break...:( 
+         parentBlock=control2;               //set next block number
+         //get next block Info...
+         eepromfs_getBlockIdentifiers(parentBlock,&state,&control,&control2);   
+         aux162=eepromfs_getBlockAddress(parentBlock);         //point to first byte of next block
+         //Get quantity of bytes usefull in actual block
+         if(bit_test(control,7)) bytesInBlock= eepromfs_getAddress(BLOCK_SIZE_ADDR)-2; else bytesInBlock=control2;
+      }else{
+         //put byte readed in char pointer
+         *dataReaded=read_ext_eeprom(aux162);
+         dataReaded++;
+         aux162++;
+         quantity--;
+         bytesInBlock--;
+      }
+   }
+
+   return quantity;
 }
+
+/*
 short eepromfs_fileCopy(int8 fileSource,int8 fileDestiny)
 {
 
 }
-
+*/
 
 
 /////////////////////////////////////////////////
@@ -270,7 +328,7 @@ short eepromfs_fileCopy(int8 fileSource,int8 fileDestiny)
 int16 eepromfs_fileCalculatePos(int8 fileNmr, int16 position, int8 * parentBlockNmr)
 {
    int8 aux83,state,control,control2;
-   int16 aux161,blockSize,aux163;
+   int16 aux161,blockSize;
    
    aux161=eepromfs_getAddress(INDEX_BLOCK_START_ADDR);
    aux161+=fileNmr;
@@ -513,21 +571,41 @@ short eepromfs_getBlockIdentifiers(int8 blockNmr, int8 * state,int8 *control, in
 }
    
 int16 eepromfs_freeSpace(void){
-   int16 quantity,aux162;
-   char blockNmr;
+   int16 aux161,aux162,aux163;
+   char frees,aux,cont;
+
+   //get INDEX BLOCK START ADDRESS
+   aux162=eepromfs_getAddress(INDEX_BLOCK_START_ADDR);
+
+   //get INDEX BLOCK END ADDRESS
+   aux161=eepromfs_getAddress(INDEX_BLOCK_END_ADDR);
+
+   //Get file max quantity(same as block count...)
+   aux161-=aux162;
+   aux161++;
 
    //get block size...(!16 bits should change -2 for -3)
    aux162=eepromfs_getAddress(BLOCK_SIZE_ADDR);   
    aux162-=2;
 
-   quantity=0;
-   blockNmr=0;
-   while(blockNmr!=EMPTY_VALUE){
-      blockNmr=eepromfs_findEmptyBlock(blockNmr);
-      if(blockNmr!=EMPTY_VALUE){ quantity+=aux162; blockNmr++; };
+   //get FREE BLOCK START ADDRESS
+   aux163=eepromfs_getAddress(FREE_BLOCK_START_ADDR);
+
+   frees=0;
+   while(1){
+      aux=read_ext_eeprom(aux163++);
+      for(cont=0;cont<8;cont++){
+         //if no more blocks, exit while...
+         if(!aux161) break;
+         if(!bit_test(aux,0)) frees++;
+         //rotate 1 bit to the right
+         aux/=2;
+         aux161--;
+      }
+      if(!aux161) break;
    }
-   
-   return quantity;
+
+   return (int16)frees*aux162;
 }
    
    ////int8 eepromfs_fileSetProperties(int8 file,int8 properties)
