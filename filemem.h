@@ -16,11 +16,11 @@ short eepromfs_fileRemove(int8 fileNmr);
 int16 eepromfs_fileSize(int8 fileNmr);
 int16 eepromfs_freeSpace(void);
 int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantity);
-int16 eepromfs_fileRead(int8 fileNmr,int16 startPos, char * dataReaded, int16 quantity);
+int16 eepromfs_fileRead(int8 fileNmr,int16 startPos, char * dataOut, int16 quantity);
 
 //Aux
 int16 eepromfs_getBlockAddress(char blockNmr);
-unsigned int16 eepromfs_getAddress(unsigned int16 VarPos);
+unsigned int16 eepromfs_getAddress(unsigned int16 varPos);
 int16 eepromfs_fileCalculatePos(int8 fileNmr, int16 position, int8 * parentBlockNmr);
 short eepromfs_fileInBounds(int8 fileNmr);
 short eepromfs_fileExists(int8 fileNmr);

@@ -166,7 +166,7 @@ int16 eepromfs_fileSize(int8 fileNmr)
 int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantity)
 {
    int16 aux161,aux162,aux163,freeSpace;
-   int8 parentBlock,res,oldLastBlock;
+   int8 parentBlock,res,oldLastBlock,burstQuantity;
    struct blockIdentifiers blkIdent;
 
    //if nothing to write...Exit(!!!!!!!CHANGE FOR CLOSE FILE!)
@@ -224,10 +224,16 @@ int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantit
          aux162=eepromfs_getBlockAddress(res);
          aux163=aux162+(eepromfs_getAddress(BLOCK_SIZE_ADDR)-2);
       }else{
-         write_ext_eeprom(aux162,*data);
-         data++;
-         aux162++;
-         quantity--;
+         burstQuantity=(aux163-aux162<quantity) ? aux163-aux162 : quantity;
+         if(burstQuantity>MAX_PAGE_SIZE) burstQuantity=MAX_PAGE_SIZE;
+         if(burstQuantity>MAX_PAGE_SIZE-(aux162 & (MAX_PAGE_SIZE-1))) burstQuantity=MAX_PAGE_SIZE-(aux162 & (MAX_PAGE_SIZE-1));
+
+         write_page_ext_eeprom(aux162,data,burstQuantity);
+         //write_ext_eeprom(aux162,*data);
+         data+=burstQuantity;
+         aux162+=burstQuantity;
+         quantity-=burstQuantity;
+         //printf("Restan: %Lu bytes\r\n",quantity);
       }
    }
 
@@ -253,9 +259,9 @@ int16 eepromfs_fileWrite(int8 fileNmr,int16 startPos, char * data, int16 quantit
    return quantity;
 }
 
-int16 eepromfs_fileRead(int8 fileNmr,int16 startPos, char * dataReaded, int16 quantity)
+int16 eepromfs_fileRead(int8 fileNmr,int16 startPos, char * dataOut, int16 quantity)
 {
-   int16 aux161,aux162,aux163;
+   int16 aux161,aux162,aux163,readQuantity;
    int8 parentBlock,bytesInBlock;
    struct blockIdentifiers blkIdent;
 
@@ -309,12 +315,14 @@ int16 eepromfs_fileRead(int8 fileNmr,int16 startPos, char * dataReaded, int16 qu
          //Get quantity of bytes usefull in actual block
          if(bit_test(blkIdent.control,7)) bytesInBlock= eepromfs_getAddress(BLOCK_SIZE_ADDR)-2; else bytesInBlock=blkIdent.control2;
       }else{
-         //put byte readed in char pointer
-         *dataReaded=read_ext_eeprom(aux162);
-         dataReaded++;
-         aux162++;
-         quantity--;
-         bytesInBlock--;
+         readQuantity=(bytesInBlock<quantity) ? bytesInBlock : quantity;
+
+         //put bytes readed in char pointer
+         read_page_ext_eeprom(aux162,dataOut,readQuantity);
+         dataOut+=readQuantity;
+         aux162+=readQuantity;
+         quantity-=readQuantity;
+         bytesInBlock-=readQuantity;
       }
    }
 
@@ -387,12 +395,15 @@ int16 eepromfs_getBlockAddress(char blockNmr)
    return aux162+aux162*blockNmr;
 }
 
-unsigned int16 eepromfs_getAddress(unsigned int16 VarPos)
+unsigned int16 eepromfs_getAddress(unsigned int16 varPos)
 {
    int8 aux81,aux82;
 
-   aux82=read_ext_eeprom(VarPos);
-   aux81=read_ext_eeprom(VarPos+1);
+   aux82=read_ext_eeprom(varPos);         //CCS buggy!
+   aux81=read_ext_eeprom(varPos+1);       //CCS buggy!
+
+   aux82=read_ext_eeprom(varPos);         //reals...:(
+   aux81=read_ext_eeprom(varPos+1);       //reals...:(
 
    return make16(aux82,aux81);   
 }

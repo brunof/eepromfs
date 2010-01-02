@@ -5,6 +5,8 @@
 #DEFINE  BOF                     0x00000000
 #DEFINE  EOF                     0xFFFFFFFF
 
+#DEFINE  MAX_PAGE_SIZE           64          //max size of write page size for 24LC256. It may change in other size of memorys...
+
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
 //Modifying this values will cause unespected behaivor
