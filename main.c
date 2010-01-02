@@ -1,7 +1,7 @@
 #include "main.h"
 #include "filemem.c"
 
-#OPT 9
+#OPT 10
 
 void main()
 {
@@ -14,7 +14,7 @@ void main()
 
    //eepromfs_fileTouch(0);
 
-   eepromfs_fileWrite(eepromfs_fileSize(0),eepromfs_fileSize(0),my_id,10);   
+   eepromfs_fileWrite(eepromfs_fileSize(0),eepromfs_fileSize(0),my_id,100);   
    //printf("El tamanio del archivo %u es de: %Lu bytes.\r\n",j,eepromfs_fileSize(j));
    //printf("El espacio disponible es de: %Lu\r\n",eepromfs_freeSpace());
 

@@ -13,7 +13,6 @@
 
 #use delay(clock=20000000)
 #use rs232(baud=9600,parity=N,xmit=PIN_C6,rcv=PIN_C7,bits=8)
-#use i2c(Master,Fast)
 
 #define EEPROM_SDA  PIN_C4
 #define EEPROM_SCL  PIN_C3

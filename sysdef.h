@@ -5,14 +5,6 @@
 #DEFINE  BOF                     0x00000000
 #DEFINE  EOF                     0xFFFFFFFF
 
-#DEFINE  EEPROM_DELAY            5
-
-#if(EEPROM_DELAY!=0)
-   #define  DEMORA_EEPROM delay_ms(EEPROM_DELAY);
-#else
-   #define  DEMORA_EEPROM 
-#endif
-
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
 //Modifying this values will cause unespected behaivor
