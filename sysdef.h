@@ -1,11 +1,13 @@
 #ifndef  sysdef_h
 #define  sysdef_h
 
-#DEFINE  EMPTY_VALUE             0xFFFFFFFF
+#DEFINE  EEPROM_EMPTY_VALUE      0xFFFFFFFF
 #DEFINE  BOF                     0x00000000
 #DEFINE  EOF                     0xFFFFFFFF
 
 #DEFINE  MAX_PAGE_SIZE           64          //max size of write page size for 24LC256. It may change in other size of memorys...
+#DEFINE  BLOCK_IDENTIFIER_SIZE    2          //Size of identifier zone for each block. Actually 2 bytes...
+
 
 //type structure:
                   //[ size | serial_number | block_size | free_block_start | index_block_start | data_block_start | system_id ]
