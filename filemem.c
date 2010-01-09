@@ -4,12 +4,9 @@
 #include "sysdef.h"
 #include "24256.C"
 
-//short eepromfs_format(char mem_size, int32 ser_num, int16 blck_size, char* sys_id){
 short eepromfs_format(char * sys_id)
 {
    unsigned int16 i;
-
-   init_ext_eeprom();
 
    //write memory struct values...
    for(i=0;i<sysDefaultValues_len;i++)
@@ -48,9 +45,6 @@ short eepromfs_fileTouch(int8 fileNmr)
    struct blockIdentifiers blkIdent;
 
    eepromfs_flag_error=ERR_NO_ERRORS;
-
-   //Check if file Number is inside limits...
-   if(!eepromfs_fileInBounds(fileNmr)) return FALSE;
    
    //Check if file already exists...
    if(eepromfs_fileExists(fileNmr)) return FALSE;
@@ -88,7 +82,6 @@ short eepromfs_fileRemove(int8 fileNmr)
    int16 aux161;
 
    //Check that file number is valid & that it exists...
-   if(!eepromfs_fileInBounds(fileNmr)) return FALSE;
    if(!eepromfs_fileExists(fileNmr)) return FALSE;
 
    //we will first, go to file block info...
@@ -126,8 +119,6 @@ int16 eepromfs_fileSize(int8 fileNmr)
    struct blockIdentifiers blkIdent;
    
    eepromfs_flag_error=ERR_NO_ERRORS;
-
-   if(!eepromfs_fileInBounds(fileNmr)) return 0;
 
    if(!eepromfs_fileExists(fileNmr)) return 0;
 
@@ -463,6 +454,8 @@ short eepromfs_fileExists(int8 fileNmr)
 
    eepromfs_flag_error=ERR_NO_ERRORS;
    
+   if(!eepromfs_fileInBounds(fileNmr)) return FALSE;
+   
    //get INDEX BLOCK START ADDRESS
    aux161=eepromfs_getAddress(INDEX_BLOCK_START_ADDR);
   
@@ -646,10 +639,3 @@ int16 eepromfs_freeSpace(void){
 
    return (int16)frees*aux162;
 }
-   
-   ////int8 eepromfs_fileSetProperties(int8 file,int8 properties)
-   ////int8 eepromfs_fileGetProperties(int8 file)
-
-   //???
-   //int16 eepromfs_totalSpace(void)
-   //int16 eepromfs_usedSpace(void)

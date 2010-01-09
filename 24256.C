@@ -23,8 +23,8 @@
 
 #ifndef EEPROM_SDA
 
-#define EEPROM_SDA  PIN_B1
-#define EEPROM_SCL  PIN_B0
+#define EEPROM_SDA  PIN_B0
+#define EEPROM_SCL  PIN_B1
 
 #endif
 
